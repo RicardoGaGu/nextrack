@@ -80,8 +80,8 @@ def main():
     if st.button("Get recommended tracks: "):
         placeholder.empty()
         placeholder2.empty()
-        st.write('You selected `%s`' %st.session_state["queryFilename"] )
         if "descriptorsPath" in st.session_state:
+            st.write('You selected `%s`' %st.session_state["queryFilename"] )
             descriptors_df = pd.read_csv(st.session_state['descriptorsPath'])
             similarTracks = searchSimilarRecords(st.session_state["queryFilename"],descriptors_df,'harmonic')
             st.title("Similar tracks")
