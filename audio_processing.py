@@ -132,6 +132,7 @@ def searchSimilarRecords(record_file,library_descriptors,criteria):
             return records_by_key
     else:
         return list(intersection)
+
 def nearestRecordsByBPM(query_bpm,library_descriptors):
 
     K=0.03 # % Desviation from query track in BPM

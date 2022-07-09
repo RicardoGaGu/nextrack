@@ -33,7 +33,6 @@ def action(file_uploader):
     fig = plot_wave(y, sr)
     st.pyplot(fig)
 
-
 def fileSelector(folder_path):
     filenames = os.listdir(folder_path)
     print(filenames)
@@ -42,39 +41,37 @@ def fileSelector(folder_path):
 
 
 def main():
-
     placeholder = st.empty()
     placeholder2 = st.empty()
     placeholder.markdown("# Nextrack Finder\n"
                          "### Upload a track library ( or pre-processed library) and query track in  the sidebar and start mixing!\n"
                          "Then click \"Get recommended tracks\" to start!\n ")
 
-    st.sidebar.markdown("Upload an audio library and analyze:")
+    #st.sidebar.markdown("Upload an audio library and analyze:")
     with st.sidebar.form(key='upload_button'):
-       libraryFilePath = st.text_input(label = "Please enter the input path to the library" )
-       analyze_button = st.form_submit_button(label='Load and analyze')
+       libraryFilePath = st.text_input(label = "Please enter the input path: " )
+       analyze_button = st.form_submit_button(label='Load and analyze an audio library')
        if analyze_button:
            try:
                with st.spinner(text="Analyzing..."):
                    descriptors_df = analyzeAudioLibrary(libraryFilePath)
-               output_path = "data/descriptors_library.csv"
+               output_path = "featuresDB/KeyTempo_features.csv"
                st.session_state['libraryPath'] = libraryFilePath
                st.session_state['descriptorsPath'] = output_path
                descriptors_df.to_csv (output_path, index = False, header=True)
                st.success("Succesfully analyzed library")
            except FileNotFoundError:
                st.warning("Input a valid library path")
-    st.sidebar.markdown("Or, load your database of features for an analyzed library")
+    #st.sidebar.markdown("Or, load your database of features for an analyzed library")
     with st.sidebar.form(key='upload_button_features'):
             featuresFilePath = st.text_input(label = "Please enter the input path to the database features: " )
-            load_features_button = st.form_submit_button(label='Load')
+            load_features_button = st.form_submit_button(label='Load features (*.csv)')
             if load_features_button:
                 if os.path.isfile(featuresFilePath):
                     st.session_state['descriptorsPath'] = featuresFilePath
                     st.success("Succesfully loaded features")
                 else:
                     st.warning("Input a valid database path")
-
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("Select a query track")
