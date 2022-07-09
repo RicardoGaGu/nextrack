@@ -93,6 +93,8 @@ def main():
             st.error("Specify a library path above")
 
     if st.button("Get recommended tracks: "):
+        # Call the SimilarityEngine class and update this part.
+        # TODO
         placeholder.empty()
         placeholder2.empty()
         if "descriptorsPath" in st.session_state:
