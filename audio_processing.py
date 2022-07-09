@@ -109,7 +109,7 @@ def analyzeAudioLibrary(libraryPath):
     return pd.DataFrame(descriptors,columns=['Record Name','KEY','BPM'])
 
 def searchSimilarRecords(record_file,library_descriptors,criteria):
-    # Retrieve if songs have similar keys and those within 3% bpm offset from the query, a maximum of k records
+    # Retrieve if songs have similar keys and those within 3% bpm offset from the query
     query_name = os.path.basename(record_file)
     if query_name in library_descriptors["Record Name"].values:
         query_bpm = library_descriptors[library_descriptors["Record Name"] == query_name]['BPM'].item()
