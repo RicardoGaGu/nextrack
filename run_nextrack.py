@@ -10,6 +10,7 @@ import wave
 import pydub
 from audio_processing import *
 import pandas as pd
+from audio_similarity import SimilarityEngine
 
 plt.rcParams["figure.figsize"] = (10, 7)
 plt.rcParams['agg.path.chunksize'] = 10000
@@ -84,22 +85,26 @@ def main():
         if 'libraryPath' in st.session_state or 'descriptorsPath' in st.session_state :
         #with st.sidebar.form(key='upload_query'):
         #try:
-                queryFilename = uploaded_file.name
-                st.session_state["queryFilename"] = queryFilename
-                st.write('You selected `%s`' %st.session_state["queryFilename"] )
+            queryFilename = uploaded_file.name
+            st.session_state["queryFilename"] = queryFilename
+            st.write('You selected `%s`' %st.session_state["queryFilename"] )
+            similarity_eng = SimilarityEngine(st.session_state["descriptorsPath"])
         #except FileNotFoundError:
         #        st.warning("Please input a valid query path")
         else:
             st.error("Specify a library path above")
+    
+    
+
 
     if st.button("Get recommended tracks: "):
         # Call the SimilarityEngine class and update this part.
-        # TODO
         placeholder.empty()
         placeholder2.empty()
         if "descriptorsPath" in st.session_state:
             descriptors_df = pd.read_csv(st.session_state['descriptorsPath'])
-            similarTracks = searchSimilarRecords(st.session_state["queryFilename"],descriptors_df,'harmonic')
+            similarTracks = similarity_eng.rankBySimilarity(st.session_state["queryFilename"])
+            # similarTracks = searchSimilarRecords(st.session_state["queryFilename"],descriptors_df,'harmonic')
             st.title("Similar tracks")
             st.write(similarTracks)
         else:
