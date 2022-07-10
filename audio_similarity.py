@@ -22,12 +22,12 @@ import ast
 
 class SimilarityEngine:
 
-    def __init__(self,libraryFeaturesPath):
+    def __init__(self, libraryFeaturesPath):
         self.LibraryFeaturesPath = libraryFeaturesPath
         self.libraryFeatures = None
         self.numericFeatures = None
         self.features = None
-        self.topK = 5
+        self.topK = 10
 
     # def set_queryPath(self, queryFeaturesPath):
     #     """
@@ -49,7 +49,7 @@ class SimilarityEngine:
 
     def getEnergyLevels(self):
         classesToLabels = {'low': 1, 'high': 3, 'medium': 2, 'variable': 2}
-        
+
         energyLevels = self.libraryFeatures['energyLevel']
         # Map levels
         energyLevels = energyLevels.map(classesToLabels)
@@ -76,7 +76,8 @@ class SimilarityEngine:
         # for subgenre in subGenres.values:
         #     print(type(ast.literal_eval(subgenre)))
         #     print(subgenre)
-        f = lambda x : np.array([_value for _key, _value in ast.literal_eval(x).items()])
+        def f(x): return np.array(
+            [_value for _key, _value in ast.literal_eval(x).items()])
         subGenres = subGenres.map(f)
         self.numericFeatures['subgenre'] = subGenres
 
@@ -85,7 +86,8 @@ class SimilarityEngine:
         Get mood features from feature library.
         """
         moodTags = self.libraryFeatures['mood']
-        f = lambda x : np.array([_value for _key, _value in ast.literal_eval(x).items()])
+        def f(x): return np.array(
+            [_value for _key, _value in ast.literal_eval(x).items()])
         moodTags = moodTags.map(f)
         self.numericFeatures['mood'] = moodTags
 
@@ -94,15 +96,26 @@ class SimilarityEngine:
         Normalize feature values to [0, 1] using the min-max feature scaling
         """
         scaler = MinMaxScaler()
-        return scaler.fit_transform(np.array(feature_column).reshape(-1,1))
+        return scaler.fit_transform(np.array(feature_column).reshape(-1, 1))
 
         # scaler = StandardScaler()
         # scaler.fit(self.libraryFeatures)
         # normalizedFeatures = scaler.transform(features)
         # return normalizedFeatures
 
-    def compute_distance(self, queryFeatures, recordFeatures):
+    def compute_weight_array(self, weight_lst):
+        """
+        Compute the weight for consine distance calculation.
+        """
+        feature_weight_lst = []
+        feature_weight_lst.append(weight_lst[0])
+        feature_weight_lst.append(weight_lst[1])
+        feature_weight_lst += [weight_lst[2]] * 13
+        feature_weight_lst += [weight_lst[3]] * 10
 
+        return np.array(feature_weight_lst)
+
+    def compute_distance(self, queryFeatures, recordFeatures, feature_weight_lst):
         """ Two numpy arrays: queryFeatures and libraryFeatures
         Returns similarity value
         """
@@ -111,7 +124,8 @@ class SimilarityEngine:
         # normQueryFeatures = self.normalizeFeatures(queryFeatures)
         # normRecordFeatures = self.normalizeFeatures(recordFeatures)
         try:
-            distance = scipy.spatial.distance.cosine(queryFeatures, recordFeatures)
+            distance = scipy.spatial.distance.cosine(
+                queryFeatures, recordFeatures, w=feature_weight_lst)
         except:
             distance = 2.
         return distance
@@ -126,7 +140,7 @@ class SimilarityEngine:
         #     libraryFeatures.append([self.getTempoFeature(recordName)].extend(self.getCyaniteFeatures(recordName)))
         # return libraryFeatures
 
-        self.features = pd.DataFrame(columns=['title', 'featureVector']) 
+        self.features = pd.DataFrame(columns=['title', 'featureVector'])
         self.features['title'] = self.numericFeatures['title']
         for i, row in self.numericFeatures.iterrows():
             feature_list = []
@@ -139,16 +153,17 @@ class SimilarityEngine:
         # self.features['featureVector'] = self.numericFeatures['bpmRangeAdjusted'].astype(str) + self.numericFeatures['energyLevel'].astype(str).replace(
         #     {'[': ' ', ']': ' '}) + self.numericFeatures['mood'].astype(str).replace({'[': ' ', ']': ' '}) + self.numericFeatures['subgenre']
 
-    def rankBySimilarity(self, queryFilename):
+    def rankBySimilarity(self, queryFilename, weight_lst, match_num):
         self.libraryFeatures = pd.read_csv(self.LibraryFeaturesPath)
         # Initialize df
-        self.numericFeatures = pd.DataFrame(columns=['title', 'energyLevel', 'bpmRangeAdjusted', 'mood', 'subgenre'])
+        self.numericFeatures = pd.DataFrame(
+            columns=['title', 'energyLevel', 'bpmRangeAdjusted', 'mood', 'subgenre'])
         self.numericFeatures['title'] = self.libraryFeatures['title']
 
         # Data cleaning
         # Fetch each feature and normalize them
         self.getTempoFeature()
-        
+
         self.getEnergyLevels()
 
         self.getSubGenreTags()
@@ -157,12 +172,15 @@ class SimilarityEngine:
 
         # Concatenate the features
         self.createLibraryFeatures()
-        
-        queryFeatures = self.features.loc[self.features['title'] == queryFilename]['featureVector'].values[0]
 
-        distances = [self.compute_distance(queryFeatures,recordFeatures) for recordFeatures in self.features['featureVector']]
+        queryFeatures = self.features.loc[self.features['title']
+                                          == queryFilename]['featureVector'].values[0]
 
-        smallest_indices = sorted(range(len(distances)), key = lambda sub: distances[sub])[1:self.topK + 1]
+        distances = [self.compute_distance(queryFeatures, recordFeatures, self.compute_weight_array(
+            weight_lst)) for recordFeatures in self.features['featureVector']]
+
+        smallest_indices = sorted(range(len(distances)), key=lambda sub: distances[sub])[
+            1:match_num + 1]
 
         queryResult = self.features['title'][smallest_indices].values
 
