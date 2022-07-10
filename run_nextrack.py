@@ -47,6 +47,14 @@ def fileSelector(folder_path):
     return os.path.join(folder_path, selected_filename)
 
 
+def tracks_playback(tracks):
+    audio_path = "/home/wynnchen/Downloads/Records"
+    for track in tracks:
+        with st.container():
+            st.write(track)
+            st.audio(os.path.join(audio_path, track), format='audio/mp3')
+            
+
 def main():
     placeholder = st.empty()
     placeholder2 = st.empty()
@@ -94,6 +102,7 @@ def main():
             queryFilename = uploaded_file.name
             st.session_state["queryFilename"] = queryFilename
             st.write('You selected `%s`' %st.session_state["queryFilename"] )
+            st.audio(uploaded_file, format='audio/mp3')
             similarity_eng = SimilarityEngine(st.session_state["descriptorsPath"])
         #except FileNotFoundError:
         #        st.warning("Please input a valid query path")
@@ -107,7 +116,7 @@ def main():
     mood_weight = st.slider("Mood Weight", 0.0, 1.0, value=1.0)
     subgenre_weight = st.slider("Subgenre Weight", 0.0, 1.0, value=1.0)
 
-    if st.button("Get recommended tracks: "):
+    if st.button("Get Recommended Tracks"):
         # Call the SimilarityEngine class and update this part.
         placeholder.empty()
         placeholder2.empty()
@@ -116,7 +125,8 @@ def main():
             similarTracks = similarity_eng.rankBySimilarity(st.session_state["queryFilename"], [energy_weight, bpm_weight, mood_weight, subgenre_weight], match_tracks)
             # similarTracks = searchSimilarRecords(st.session_state["queryFilename"],descriptors_df,'harmonic')
             st.title("Similar tracks")
-            st.write(similarTracks)
+            #st.write(similarTracks)
+            tracks_playback(similarTracks)
         else:
             st.write("No library is analyzed")
 
