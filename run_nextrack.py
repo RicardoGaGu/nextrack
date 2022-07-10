@@ -53,7 +53,7 @@ def tracks_playback(tracks):
         with st.container():
             st.write(track)
             st.audio(os.path.join(audio_path, track), format='audio/mp3')
-            
+
 
 def main():
     placeholder = st.empty()
@@ -89,7 +89,7 @@ def main():
                     st.warning("Input a valid database path")
 
     st.sidebar.markdown("---")
-    st.sidebar.markdown("Select a query track")
+    #st.sidebar.markdown("Select a query track")
     #placeholder.empty()
     #placeholder2.empty()
     uploaded_file = st.sidebar.file_uploader("Upload a query track")
@@ -108,11 +108,11 @@ def main():
         #        st.warning("Please input a valid query path")
         else:
             st.error("Specify a library path above")
-    
+
     st.sidebar.markdown("---")
-    match_tracks= st.slider("Number of Songs to Retrieve", 1, 20, value=10)
+    match_tracks= st.number_input("Number of Songs to Retrieve", min_value=1, max_value=20, value=10)
     energy_weight = st.slider("Energy Weight", 0.0, 1.0, value=1.0)
-    bpm_weight = st.slider("BPM Weight", 0.0, 1.0, value=1.0)
+    #bpm_weight = st.slider("Rhytmic Weight", 0.0, 1.0, value=1.0)
     mood_weight = st.slider("Mood Weight", 0.0, 1.0, value=1.0)
     subgenre_weight = st.slider("Subgenre Weight", 0.0, 1.0, value=1.0)
 
@@ -122,11 +122,12 @@ def main():
         placeholder2.empty()
         if "descriptorsPath" in st.session_state:
             descriptors_df = pd.read_csv(st.session_state['descriptorsPath'])
-            similarTracks = similarity_eng.rankBySimilarity(st.session_state["queryFilename"], [energy_weight, bpm_weight, mood_weight, subgenre_weight], match_tracks)
+            similarTracks = similarity_eng.rankBySimilarity(st.session_state["queryFilename"], [energy_weight, 1, mood_weight, subgenre_weight], match_tracks)
             # similarTracks = searchSimilarRecords(st.session_state["queryFilename"],descriptors_df,'harmonic')
-            st.title("Similar tracks")
-            #st.write(similarTracks)
-            tracks_playback(similarTracks)
+            styler = pd.DataFrame(similarTracks).style.hide_index()
+            st.write(styler.to_html(), unsafe_allow_html=True)
+            #st.dataframe(similarTracks)
+            #tracks_playback(similarTracks)
         else:
             st.write("No library is analyzed")
 

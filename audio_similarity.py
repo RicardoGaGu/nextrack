@@ -18,14 +18,22 @@ import pydub
 import scipy
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import ast
+import pickle
 
 
 class SimilarityEngine:
 
     def __init__(self, libraryFeaturesPath):
+
+        def load_HarmonicDB(path):
+            with open(path, 'rb') as f:
+                loaded_dict = pickle.load(f)
+            return loaded_dict
+
         self.LibraryFeaturesPath = libraryFeaturesPath
         self.libraryFeatures = None
         self.numericFeatures = None
+        self.HarmonicDB = load_HarmonicDB("featuresDB/harmonicDB_all.pkl")
         self.features = None
         self.topK = 10
 
@@ -69,7 +77,7 @@ class SimilarityEngine:
         self.numericFeatures['bpmRangeAdjusted'] = BPM
 
     def getSubGenreTags(self):
-        """ 
+        """
         Get subgenre features from feature library.
         """
         subGenres = self.libraryFeatures['subgenre']
@@ -82,7 +90,7 @@ class SimilarityEngine:
         self.numericFeatures['subgenre'] = subGenres
 
     def getMoodTags(self):
-        """ 
+        """
         Get mood features from feature library.
         """
         moodTags = self.libraryFeatures['mood']
@@ -114,6 +122,13 @@ class SimilarityEngine:
         feature_weight_lst += [weight_lst[3]] * 10
 
         return np.array(feature_weight_lst)
+
+    def harmonic_distance(self,queryFilename,recordFilename):
+
+        queryChromaVector = self.HarmonicDB[queryFilename]
+        recordChromaVector = self.HarmonicDB[queryFilename]
+        dist = np.sum([(queryChromaVector[i]-recordChromaVector[i])**2 for i in range(len(queryChromaVector))])
+        return 1-dist
 
     def compute_distance(self, queryFeatures, recordFeatures, feature_weight_lst):
         """ Two numpy arrays: queryFeatures and libraryFeatures
@@ -154,6 +169,7 @@ class SimilarityEngine:
         #     {'[': ' ', ']': ' '}) + self.numericFeatures['mood'].astype(str).replace({'[': ' ', ']': ' '}) + self.numericFeatures['subgenre']
 
     def rankBySimilarity(self, queryFilename, weight_lst, match_num):
+
         self.libraryFeatures = pd.read_csv(self.LibraryFeaturesPath)
         # Initialize df
         self.numericFeatures = pd.DataFrame(
@@ -178,10 +194,11 @@ class SimilarityEngine:
 
         distances = [self.compute_distance(queryFeatures, recordFeatures, self.compute_weight_array(
             weight_lst)) for recordFeatures in self.features['featureVector']]
-
+        harmonic_distances = [self.harmonic_distance(queryFilename,recordName) for recordName in self.features["title"]]
+        distances = [ distances[i] + harmonic_distances[i] for i in range(len(distances))]
         smallest_indices = sorted(range(len(distances)), key=lambda sub: distances[sub])[
             1:match_num + 1]
 
-        queryResult = self.features['title'][smallest_indices].values
+        queryResult = self.features['title'][smallest_indices]
 
         return queryResult
